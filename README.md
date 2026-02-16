@@ -11,7 +11,7 @@ Une page web minimaliste qui affiche le nombre de jours consécutifs sans pluie 
 
 ## Démo
 
-La page est accessible à l'adresse : https://nlhomme.github.io/estcequilpleut.github.io/
+La page est accessible à l'adresse : [https://nombredejoursanspluie.lhomme.xyz](https://nombredejoursanspluie.lhomme.xyz)
 
 ## Fonctionnement technique
 

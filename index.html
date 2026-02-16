@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Est-ce qu'il pleut à Nantes ?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .counter {
+            font-size: 8rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .label {
+            font-size: 1.5rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .loading {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .error {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .updated {
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            opacity: 0.7;
+        }
+
+        .raining {
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        }
+
+        .sunny {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nombre de jours sans pluie à Nantes :</h1>
+        <div id="content">
+            <p class="loading">Chargement des données météo...</p>
+        </div>
+        <p class="updated" id="updated"></p>
+    </div>
+
+    <script>
+        const NANTES_LAT = 47.2184;
+        const NANTES_LON = -1.5536;
+
+        async function fetchWeatherData() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+
+            const formatDate = (date) => date.toISOString().split('T')[0];
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${NANTES_LAT}&longitude=${NANTES_LON}&daily=precipitation_sum&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&timezone=Europe/Paris`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Erreur:', error);
+                throw error;
+            }
+        }
+
+        function calculateDaysWithoutRain(data) {
+            const precipitations = data.daily.precipitation_sum;
+            const dates = data.daily.time;
+
+            let daysWithoutRain = 0;
+
+            // Count backwards from today (last element) until we find rain
+            for (let i = precipitations.length - 1; i >= 0; i--) {
+                if (precipitations[i] > 0) {
+                    break;
+                }
+                daysWithoutRain++;
+            }
+
+            return daysWithoutRain;
+        }
+
+        function updateDisplay(days) {
+            const content = document.getElementById('content');
+            const body = document.body;
+
+            if (days === 0) {
+                body.className = 'raining';
+                content.innerHTML = `
+                    <p class="counter">0</p>
+                    <p class="label">Il pleut aujourd'hui</p>
+                `;
+            } else {
+                body.className = 'sunny';
+                content.innerHTML = `
+                    <p class="counter">${days}</p>
+                `;
+            }
+
+            const now = new Date();
+            const options = {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('updated').textContent =
+                `Mis à jour le ${now.toLocaleDateString('fr-FR', options)}`;
+        }
+
+        function showError(message) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="error">
+                    <p>Impossible de récupérer les données météo.</p>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        async function init() {
+            try {
+                const data = await fetchWeatherData();
+                const days = calculateDaysWithoutRain(data);
+                updateDisplay(days);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
